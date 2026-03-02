@@ -25,7 +25,8 @@ const Navbar = () => {
 
         setDeleting(true);
         try {
-            const response = await fetch("http://localhost:5000/account", {
+            const response = await fetch(
+  `${import.meta.env.VITE_API_URL}/account`, {
                 method: "DELETE",
                 headers: {
                     Authorization: `Bearer ${token}`,

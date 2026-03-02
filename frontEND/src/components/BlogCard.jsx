@@ -19,13 +19,13 @@ const BlogCard = ({ blog, onLikeUpdate }) => {
         }
     }, [blog, currentUserId]);
 
-    const openBlog = () =>{
+    const openBlog = () => {
         navigate(`/blog/${blog._id}`);
     };
 
     const openAuthor = (e) => {
-       e.stopPropagation();
-       if (blog.authorId) navigate(`/u/${blog.authorId}`);
+        e.stopPropagation();
+        if (blog.authorId) navigate(`/u/${blog.authorId}`);
     };
 
     // Detect if media is video
@@ -38,7 +38,7 @@ const BlogCard = ({ blog, onLikeUpdate }) => {
 
     const handleLikeClick = async (e) => {
         e.stopPropagation();
-        
+
         const token = localStorage.getItem("token");
         if (!token) {
             navigate("/login");
@@ -47,9 +47,9 @@ const BlogCard = ({ blog, onLikeUpdate }) => {
 
         setLiking(true);
         try {
-            const endpoint = isLiked 
-                ? `http://localhost:5000/api/blogs/${blog._id}/unlike`
-                : `http://localhost:5000/api/blogs/${blog._id}/like`;
+            const endpoint = isLiked
+                ? `${import.meta.env.VITE_API_URL}/api/blogs/${blog._id}/unlike`
+                : `${import.meta.env.VITE_API_URL}/api/blogs/${blog._id}/like`;
 
             const response = await fetch(endpoint, {
                 method: "POST",
@@ -88,7 +88,7 @@ const BlogCard = ({ blog, onLikeUpdate }) => {
                 <div className="relative w-full aspect-video bg-gray-200 overflow-hidden flex-shrink-0">
                     {isVideo ? (
                         <video
-                            src={`http://localhost:5000${blog.image}`}
+                            src={`${import.meta.env.VITE_API_URL}${blog.image}`}
                             className="w-full h-full object-contain"
                             onMouseEnter={(e) => e.target.play()}
                             onMouseLeave={(e) => {
@@ -98,7 +98,7 @@ const BlogCard = ({ blog, onLikeUpdate }) => {
                         />
                     ) : (
                         <img
-                            src={`http://localhost:5000${blog.image}`}
+                            src={`${import.meta.env.VITE_API_URL}${blog.image}`}
                             alt={blog.title}
                             className="w-full h-full object-contain"
                         />
@@ -119,9 +119,9 @@ const BlogCard = ({ blog, onLikeUpdate }) => {
                     {blog.desc}
                 </p>
                 <div className='flex justify-between items-center mt-4 text-sm text-gray-400'>
-                    <span 
-                      onClick={openAuthor} 
-                      className='hover:underline text-[#033452] cursor-pointer font-semibold'
+                    <span
+                        onClick={openAuthor}
+                        className='hover:underline text-[#033452] cursor-pointer font-semibold'
                     >
                         👤 {blog.authorName || "Unknown Author"}
                     </span>

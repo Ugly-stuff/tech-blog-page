@@ -58,7 +58,8 @@ const upload = multer({
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:5174",
-  "https://login-signup-page-orpin.vercel.app"
+  "https://login-signup-page-orpin.vercel.app",
+  "https://tech-blog-page-8eaf80j5f-souvik-pramaniks-projects-fa85b5a1.vercel.app/"
 ];
 
 

@@ -22,7 +22,7 @@ const App = () => {
       return;
     }
 
-    fetch("http://localhost:5000/profile", {
+    fetch(`${import.meta.env.VITE_API_URL}/profile`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -52,7 +52,7 @@ const App = () => {
 
   return (
     <BrowserRouter>
-    <Navbar />
+      <Navbar />
       <Routes>
         {/* PUBLIC ROUTES */}
         <Route path="/" element={<PublicFeed />} />
@@ -76,14 +76,14 @@ const App = () => {
             <ProtectedRoute isAuth={isAuth}>
               <CreateBlog />
             </ProtectedRoute>
-          } 
+          }
         />
         <Route
           path="/edit/:id" element={
             <ProtectedRoute isAuth={isAuth}>
               <EditBlog />
             </ProtectedRoute>
-          } 
+          }
         />
 
       </Routes>
