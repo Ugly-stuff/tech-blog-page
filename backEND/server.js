@@ -14,14 +14,13 @@ import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
 
-
 dotenv.config();
 const app = express();
 
 // Setup file upload directory
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const uploadDir = path.join(__dirname, 'uploads');
+const uploadDir = path.join(__dirname, "uploads");
 
 // Create uploads directory if it doesn't exist
 if (!fs.existsSync(uploadDir)) {
@@ -34,137 +33,139 @@ const storage = multer.diskStorage({
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
     cb(null, uniqueSuffix + path.extname(file.originalname));
-  }
+  },
 });
 
 const fileFilter = (req, file, cb) => {
-  // Allow images and videos only
-  const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'video/mp4', 'video/webm', 'video/quicktime'];
+  const allowedMimeTypes = [
+    "image/jpeg",
+    "image/png",
+    "image/gif",
+    "image/webp",
+    "video/mp4",
+    "video/webm",
+    "video/quicktime",
+  ];
   if (allowedMimeTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error('Invalid file type. Only images and videos are allowed.'));
+    cb(new Error("Invalid file type. Only images and videos are allowed."));
   }
 };
 
-const upload = multer({ 
-  storage: storage,
-  fileFilter: fileFilter,
-  limits: { fileSize: 100 * 1024 * 1024 } // 100MB limit
+const upload = multer({
+  storage,
+  fileFilter,
+  limits: { fileSize: 100 * 1024 * 1024 }, // 100MB limit
 });
 
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:5174",
   "https://login-signup-page-orpin.vercel.app",
-  "https://tech-blog-page-8eaf80j5f-souvik-pramaniks-projects-fa85b5a1.vercel.app/"
+  "https://tech-blog-page-git-main-souvik-pramaniks-projects-fa85b5a1.vercel.app",
 ];
 
-
-app.use(cors({
-  origin: function (origin, callback){
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    } 
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) return callback(null, true);
       return callback(new Error("Not allowed by CORS"));
-  },
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: true
-}));
+    },
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+  })
+);
 
-  // JSON parser
 app.use(express.json());
-
-// Serve uploaded files as static assets
-app.use('/uploads', express.static(uploadDir));
+app.use("/uploads", express.static(uploadDir));
 
 // File upload route
-app.post('/upload', upload.single('file'), (req, res) => {
+app.post("/upload", upload.single("file"), (req, res) => {
   try {
     if (!req.file) {
-      return res.status(400).json({ error: 'No file uploaded' });
+      return res.status(400).json({ error: "No file uploaded" });
     }
-    
-    // Return the file URL that can be used to access the file
+
     const fileUrl = `/uploads/${req.file.filename}`;
-    res.json({ 
-      success: true, 
-      fileUrl: fileUrl,
+    res.json({
+      success: true,
+      fileUrl,
       filename: req.file.filename,
-      mimetype: req.file.mimetype
+      mimetype: req.file.mimetype,
     });
   } catch (err) {
-    console.error('Upload error:', err);
-    res.status(500).json({ error: 'File upload failed' });
+    console.error("Upload error:", err);
+    res.status(500).json({ error: "File upload failed" });
   }
 });
 
-  //ROutes 
 app.use("/api/blogs", blogRoutes);
+
 const JWT_SECRET = process.env.JWT_SECRET;
-mongoose.connect(process.env.MONGO_URL)
+
+mongoose
+  .connect(process.env.MONGO_URL)
   .then(() => console.log("MongoDB Connected"))
   .catch((err) => console.log(err));
 
-// Creating signup route
+// Signup route
 app.post("/signup", async (req, res) => {
   try {
     const { email, password, username } = req.body;
 
     if (!email || !password || !username) {
-      return res.status(400).json({ status: "error", message: "Email, username, and password are required" });
+      return res
+        .status(400)
+        .json({ status: "error", message: "Email, username, and password are required" });
     }
 
-    // Check if email already exists
     const existingEmail = await User.findOne({ email });
     if (existingEmail) {
       return res.status(409).json({ status: "error", message: "Email already exists" });
     }
 
-    // Check if username already exists
     const existingUsername = await User.findOne({ username });
     if (existingUsername) {
       return res.status(409).json({ status: "error", message: "Username already taken" });
     }
 
-    // Hash password before saving
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
     const newUser = new User({
       email,
       username,
       password,
-      authProvider: "local"
+      authProvider: "local",
     });
     await newUser.save();
 
-    const token = jwt.sign(
-      { userId: newUser._id },
-      JWT_SECRET,
-      { expiresIn: "7d" }
-    );
+    const token = jwt.sign({ userId: newUser._id }, JWT_SECRET, { expiresIn: "7d" });
 
-    return res.json({ status: "ok", token, userId: newUser._id, email: newUser.email, username: newUser.username });
+    return res.json({
+      status: "ok",
+      token,
+      userId: newUser._id,
+      email: newUser.email,
+      username: newUser.username,
+    });
   } catch (error) {
-    console.log("Signup error:", error);
+    console.error("Signup error:", error);
     return res.status(500).json({ status: "error", message: "Signup failed" });
   }
 });
 
-// For login
+// Login route
 app.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
-    
+
     if (!email || !password) {
       return res.json({ status: "error", message: "Email and password are required" });
     }
-    
+
     const user = await User.findOne({ email });
     if (!user) return res.json({ status: "error", message: "User not found" });
 
@@ -179,37 +180,33 @@ app.post("/login", async (req, res) => {
   }
 });
 
-// GOOGLE LOGIN ROUTE
+// Google login route
 app.post("/auth/google", async (req, res) => {
   try {
     const { idToken } = req.body;
-    console.log("REQ BODY", req.body);
+
     if (!idToken) {
       return res.status(400).json({ status: "error", message: "Token missing" });
     }
 
     if (!admin || !admin.auth) {
-      return res.status(500).json({ status: "error", message: "Firebase Admin not configured on server" });
+      return res
+        .status(500)
+        .json({ status: "error", message: "Firebase Admin not configured on server" });
     }
 
     const decoded = await admin.auth().verifyIdToken(idToken);
-    const email = decoded.email;
-    const googleId = decoded.user_id;
-    const displayName = decoded.name || email.split('@')[0]; // Use name or email prefix as default
+    const { email, user_id: googleId, name: displayName = email.split("@")[0] } = decoded;
 
     if (!email) {
       return res.status(401).json({ status: "error", message: "Invalid token" });
-      
     }
 
     let user = await User.findOne({ email });
 
     if (!user) {
-      // Create username from displayName
-      let username = displayName.toLowerCase().replace(/\s+/g, '_');
-      
-      // Check if username already exists, if so append random number
-      let existingUser = await User.findOne({ username });
+      let username = displayName.toLowerCase().replace(/\s+/g, "_");
+      const existingUser = await User.findOne({ username });
       if (existingUser) {
         username = username + Math.floor(Math.random() * 10000);
       }
@@ -219,41 +216,39 @@ app.post("/auth/google", async (req, res) => {
         username,
         password: null,
         authProvider: "google",
-        googleId
+        googleId,
       });
     }
 
-    const jwtToken = jwt.sign(
-      { userId: user._id },
-      JWT_SECRET,
-      { expiresIn: "7d" }
-    );
+    const jwtToken = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: "7d" });
 
-    res.json({ status: "ok", token: jwtToken, userId: user._id, email: user.email, username: user.username });
+    res.json({
+      status: "ok",
+      token: jwtToken,
+      userId: user._id,
+      email: user.email,
+      username: user.username,
+    });
   } catch (err) {
     console.error("Google auth error:", err);
     res.status(401).json({ status: "error", message: "Invalid Google Token" });
   }
 });
 
-
-
-app.get("/profile", authMiddleware, async (req, res) =>{
+// Get profile
+app.get("/profile", authMiddleware, async (req, res) => {
   const user = await User.findById(req.user.userId).select("-password");
-  res.json({ status: "ok", user});
+  res.json({ status: "ok", user });
 });
 
-// DELETE ACCOUNT
+// Delete account
 app.delete("/account", authMiddleware, async (req, res) => {
   try {
     const userId = req.user.userId;
-    
-    // Delete all blogs by this user
+
     await Blog.deleteMany({ authorId: userId.toString() });
-    
-    // Delete the user account
     await User.findByIdAndDelete(userId);
-    
+
     res.json({ status: "ok", message: "Account deleted successfully" });
   } catch (error) {
     console.error("Delete account error:", error);
