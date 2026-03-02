@@ -53,7 +53,7 @@ const CreateBlog = () => {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch('http://localhost:5000/upload', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/upload`, {
         method: 'POST',
         body: formData,
       });
@@ -89,7 +89,7 @@ const CreateBlog = () => {
       }
 
       // Create blog with media URL
-      const res = await fetch("http://localhost:5000/api/blogs", {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/blogs`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

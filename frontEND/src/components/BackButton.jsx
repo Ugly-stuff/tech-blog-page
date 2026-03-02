@@ -15,7 +15,7 @@ const BackButton = ({ fallback = "/" }) => {
 
   return (
     <button 
-    onClick={goBack} className='text-sm-blue-600 mb-4'>
+    onClick={goBack} className='text-sm text-blue-600 mb-4'>
           ← Back
     </button>
   )
