@@ -61,22 +61,10 @@ const upload = multer({
   limits: { fileSize: 100 * 1024 * 1024 }, // 100MB limit
 });
 
-const allowedOrigins = [
-  "http://localhost:5173",
-  "http://localhost:5174",
-  "https://login-signup-page-orpin.vercel.app",
-  "https://tech-blog-page-git-main-souvik-pramaniks-projects-fa85b5a1.vercel.app",
-];
 
 app.use(
   cors({
-    origin: (origin, callback) => {
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin)) return callback(null, true);
-      return callback(new Error("Not allowed by CORS"));
-    },
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    origin: true,
     credentials: true,
   })
 );
