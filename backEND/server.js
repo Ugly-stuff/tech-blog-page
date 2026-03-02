@@ -1,39 +1,59 @@
 import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
-import User from "./models/User.js";
-import Blog from "./models/Blog.js";
+import dotenv from "dotenv";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import dotenv from "dotenv";
-import admin from "./firebaseAdmin.js";
-import authMiddleware from "./middleware/authMiddleware.js";
-import blogRoutes from "./routes/blogRoutes.js";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
 
+import User from "./models/User.js";
+import Blog from "./models/Blog.js";
+import admin from "./firebaseAdmin.js";
+import authMiddleware from "./middleware/authMiddleware.js";
+import blogRoutes from "./routes/blogRoutes.js";
+
 dotenv.config();
+
 const app = express();
 
-// Setup file upload directory
+/* =========================
+   CORS (PRODUCTION READY)
+========================= */
+
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173",
+      "https://tech-blog-page.vercel.app"
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+  })
+);
+
+app.use(express.json());
+
+/* =========================
+   FILE UPLOAD SETUP
+========================= */
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const uploadDir = path.join(__dirname, "uploads");
 
-// Create uploads directory if it doesn't exist
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// Configure multer for file uploads
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir);
-  },
+  destination: (req, file, cb) => cb(null, uploadDir),
   filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    const uniqueSuffix =
+      Date.now() + "-" + Math.round(Math.random() * 1e9);
     cb(null, uniqueSuffix + path.extname(file.originalname));
   },
 });
@@ -48,78 +68,47 @@ const fileFilter = (req, file, cb) => {
     "video/webm",
     "video/quicktime",
   ];
-  if (allowedMimeTypes.includes(file.mimetype)) {
-    cb(null, true);
-  } else {
-    cb(new Error("Invalid file type. Only images and videos are allowed."));
-  }
+  allowedMimeTypes.includes(file.mimetype)
+    ? cb(null, true)
+    : cb(new Error("Invalid file type"));
 };
 
 const upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 100 * 1024 * 1024 }, // 100MB limit
+  limits: { fileSize: 100 * 1024 * 1024 },
 });
 
-
-// Configure CORS for production and development
-const allowedOrigins = [
-  "http://localhost:3000",
-  "http://localhost:5173",
-  "http://localhost:5000",
-  "https://tech-blog-page.onrender.com",
-  // Add your Vercel frontend URL here when deployed
-  process.env.FRONTEND_URL || ""
-].filter(Boolean);
-
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      // Allow requests with no origin (like mobile apps or curl requests)
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production') {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
-      }
-    },
-    credentials: true,
-  })
-);
-
-app.use(express.json());
 app.use("/uploads", express.static(uploadDir));
 
-// File upload route
 app.post("/upload", upload.single("file"), (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ error: "No file uploaded" });
-    }
+  if (!req.file)
+    return res.status(400).json({ error: "No file uploaded" });
 
-    const fileUrl = `/uploads/${req.file.filename}`;
-    res.json({
-      success: true,
-      fileUrl,
-      filename: req.file.filename,
-      mimetype: req.file.mimetype,
-    });
-  } catch (err) {
-    console.error("Upload error:", err);
-    res.status(500).json({ error: "File upload failed" });
-  }
+  res.json({
+    success: true,
+    fileUrl: `/uploads/${req.file.filename}`,
+  });
 });
 
-app.use("/api/blogs", blogRoutes);
-
-const JWT_SECRET = process.env.JWT_SECRET;
+/* =========================
+   DATABASE
+========================= */
 
 mongoose
   .connect(process.env.MONGO_URL)
   .then(() => console.log("MongoDB Connected"))
-  .catch((err) => console.log(err));
+  .catch((err) => console.error(err));
 
-// Signup route
+const JWT_SECRET = process.env.JWT_SECRET;
+
+/* =========================
+   ROUTES
+========================= */
+
+app.use("/api/blogs", blogRoutes);
+
+/* ===== SIGNUP ===== */
 app.post("/signup", async (req, res) => {
   try {
     const { email, password, username } = req.body;
@@ -127,18 +116,12 @@ app.post("/signup", async (req, res) => {
     if (!email || !password || !username) {
       return res
         .status(400)
-        .json({ status: "error", message: "Email, username, and password are required" });
+        .json({ status: "error", message: "All fields required" });
     }
 
-    const existingEmail = await User.findOne({ email });
-    if (existingEmail) {
-      return res.status(409).json({ status: "error", message: "Email already exists" });
-    }
-
-    const existingUsername = await User.findOne({ username });
-    if (existingUsername) {
-      return res.status(409).json({ status: "error", message: "Username already taken" });
-    }
+    const existing = await User.findOne({ email });
+    if (existing)
+      return res.status(409).json({ status: "error", message: "Email exists" });
 
     const newUser = new User({
       email,
@@ -146,120 +129,104 @@ app.post("/signup", async (req, res) => {
       password,
       authProvider: "local",
     });
+
     await newUser.save();
 
-    const token = jwt.sign({ userId: newUser._id }, JWT_SECRET, { expiresIn: "7d" });
+    const token = jwt.sign(
+      { userId: newUser._id },
+      JWT_SECRET,
+      { expiresIn: "7d" }
+    );
 
-    return res.json({
+    res.json({
       status: "ok",
       token,
       userId: newUser._id,
       email: newUser.email,
       username: newUser.username,
     });
-  } catch (error) {
-    console.error("Signup error:", error);
-    return res.status(500).json({ status: "error", message: "Signup failed" });
+  } catch (err) {
+    res.status(500).json({ status: "error", message: "Signup failed" });
   }
 });
 
-// Login route
+/* ===== LOGIN ===== */
 app.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    if (!email || !password) {
-      return res.json({ status: "error", message: "Email and password are required" });
-    }
-
     const user = await User.findOne({ email });
-    if (!user) return res.json({ status: "error", message: "User not found" });
+    if (!user)
+      return res.json({ status: "error", message: "User not found" });
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.json({ status: "error", message: "Wrong Password" });
+    if (!isMatch)
+      return res.json({ status: "error", message: "Wrong password" });
 
-    const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: "7d" });
-    res.json({ status: "ok", token, userId: user._id, email: user.email, username: user.username });
-  } catch (error) {
-    console.error("Login error:", error);
-    res.json({ status: "error", message: error.message });
-  }
-});
-
-// Google login route
-app.post("/auth/google", async (req, res) => {
-  try {
-    const { idToken } = req.body;
-
-    if (!idToken) {
-      return res.status(400).json({ status: "error", message: "Token missing" });
-    }
-
-    if (!admin || !admin.auth) {
-      return res
-        .status(500)
-        .json({ status: "error", message: "Firebase Admin not configured on server" });
-    }
-
-    const decoded = await admin.auth().verifyIdToken(idToken);
-    const { email, user_id: googleId, name: displayName = email.split("@")[0] } = decoded;
-
-    if (!email) {
-      return res.status(401).json({ status: "error", message: "Invalid token" });
-    }
-
-    let user = await User.findOne({ email });
-
-    if (!user) {
-      let username = displayName.toLowerCase().replace(/\s+/g, "_");
-      const existingUser = await User.findOne({ username });
-      if (existingUser) {
-        username = username + Math.floor(Math.random() * 10000);
-      }
-
-      user = await User.create({
-        email,
-        username,
-        password: null,
-        authProvider: "google",
-        googleId,
-      });
-    }
-
-    const jwtToken = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: "7d" });
+    const token = jwt.sign(
+      { userId: user._id },
+      JWT_SECRET,
+      { expiresIn: "7d" }
+    );
 
     res.json({
       status: "ok",
-      token: jwtToken,
+      token,
       userId: user._id,
       email: user.email,
       username: user.username,
     });
   } catch (err) {
-    console.error("Google auth error:", err);
-    res.status(401).json({ status: "error", message: "Invalid Google Token" });
+    res.json({ status: "error", message: "Login failed" });
   }
 });
 
-// Get profile
+/* ===== GOOGLE AUTH ===== */
+app.post("/auth/google", async (req, res) => {
+  try {
+    const { idToken } = req.body;
+
+    const decoded = await admin.auth().verifyIdToken(idToken);
+    const { email, user_id: googleId } = decoded;
+
+    let user = await User.findOne({ email });
+
+    if (!user) {
+      user = await User.create({
+        email,
+        username: email.split("@")[0],
+        authProvider: "google",
+        googleId,
+      });
+    }
+
+    const token = jwt.sign(
+      { userId: user._id },
+      JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    res.json({
+      status: "ok",
+      token,
+      userId: user._id,
+      email: user.email,
+      username: user.username,
+    });
+  } catch (err) {
+    res.status(401).json({ status: "error", message: "Google auth failed" });
+  }
+});
+
+/* ===== PROFILE ===== */
 app.get("/profile", authMiddleware, async (req, res) => {
   const user = await User.findById(req.user.userId).select("-password");
   res.json({ status: "ok", user });
 });
 
-// Delete account
-app.delete("/account", authMiddleware, async (req, res) => {
-  try {
-    const userId = req.user.userId;
 
-    await Blog.deleteMany({ authorId: userId.toString() });
-    await User.findByIdAndDelete(userId);
+const PORT = process.env.PORT || 5000;
 
-    res.json({ status: "ok", message: "Account deleted successfully" });
-  } catch (error) {
-    console.error("Delete account error:", error);
-    res.status(500).json({ status: "error", message: "Failed to delete account" });
-  }
+app.listen(PORT, () => {
+  console.log(`Server running on Port ${PORT}`);
 });
-
-app.listen(5000, () => console.log("Server running on Port 5000"));
