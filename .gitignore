@@ -129,9 +129,9 @@ vite.config.ts.timestamp-*
 *.sln
 *.sw?
 backEND/serviceAccountKey.json
-backEND/uploads/*.jpg
-backEND/uploads/*.png
-backEND/uploads/*.jpg
+# backEND/uploads/*.jpg
+# backEND/uploads/*.png
+# backEND/uploads/*.jpg
 backEND/uploads/*.mp4
 backEND/.env.example
 frontEND/.env.example

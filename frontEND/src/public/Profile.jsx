@@ -55,7 +55,7 @@ const Profile = () => {
       <div className="max-w-5xl mx-auto">
         <BackButton fallback="/" />
 
-        {/* PROFILE HEADER */}
+        {/* Header */}
         <div className="bg-white rounded-xl shadow p-6 mb-8 mt-4">
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 bg-gradient-to-br from-[#033452] to-blue-500 rounded-full flex items-center justify-center">
@@ -75,7 +75,7 @@ const Profile = () => {
           </div>
         </div>
 
-        {/* BLOGS GRID */}
+        {/* Blog grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {blogs.length === 0 && (
             <div className="col-span-full text-center py-10">

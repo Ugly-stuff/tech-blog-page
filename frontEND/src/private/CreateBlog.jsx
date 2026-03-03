@@ -10,7 +10,7 @@ const CreateBlog = () => {
   const [content, setContent] = useState("");
   const [mediaFile, setMediaFile] = useState(null);
   const [mediaPreview, setMediaPreview] = useState("");
-  const [mediaType, setMediaType] = useState(""); // 'image' or 'video'
+  const [mediaType, setMediaType] = useState(""); // image or video
   const [loading, setLoading] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
 
@@ -88,7 +88,7 @@ const CreateBlog = () => {
         mediaUrl = await uploadFile(mediaFile);
       }
 
-      // Create blog with media URL
+      // Create Blog with media URL
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/blogs`, {
         method: "POST",
         headers: {
@@ -99,8 +99,8 @@ const CreateBlog = () => {
           title,
           desc: content.slice(0, 120),
           content,
-          image: mediaUrl, // Now this is a URL instead of Base64
-          mediaType: mediaType, // Store the media type
+          image: mediaUrl, // Now this is a Url
+          mediaType: mediaType, // storing media type.. 
         }),
       });
 

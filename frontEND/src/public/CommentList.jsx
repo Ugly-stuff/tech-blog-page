@@ -36,7 +36,7 @@ const CommentList = () => {
         />
       {/* Disabled input (public view) */}
       <div className="mt-6 text-sm text-gray-400">
-        Login to add a comment
+        Please sir login to view
       </div>
     </div>
   );

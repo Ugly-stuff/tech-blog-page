@@ -7,7 +7,7 @@ const FileUpload = ({ onFileSelect, accept = "image/*,video/*" }) => {
     const [fileSize, setFileSize] = useState("");
     const [isCompressing, setIsCompressing] = useState(false);
     const fileInputRef = useRef(null);
-    const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
+    const MAX_FILE_SIZE = 100 * 1024 * 1024; // maximum 100 MB
 
     const handleDragOver = (e) => {
         e.preventDefault();
@@ -28,14 +28,12 @@ const FileUpload = ({ onFileSelect, accept = "image/*,video/*" }) => {
     };
 
     const compressVideo = async (file) => {
-        // For now, we'll implement a simpler approach using Blob API
-        // For production, consider using libraries like ffmpeg.wasm or handbrake
-        return file; // Return original file for now
-        // Video compression would require FFmpeg.wasm integration
+       // TODO ...
+        return file;
     };
 
     const processFile = async (file) => {
-        // Validate file size
+        // Validating file size
         if (file.size > MAX_FILE_SIZE) {
             alert(`File too large! Maximum size is 100MB. Your file is ${formatFileSize(file.size)}`);
             return;
@@ -50,13 +48,13 @@ const FileUpload = ({ onFileSelect, accept = "image/*,video/*" }) => {
             if (file.type.startsWith('image/')) {
                 setPreview(e.target.result);
             } else if (file.type.startsWith('video/')) {
-                // For videos, show a video preview icon
+                // For videos, it will show a vedeo icon
                 setPreview(null);
             }
         };
         reader.readAsDataURL(file);
 
-        // Check if video needs compression
+        // checking if uploaded video need compression
         if (file.type.startsWith('video/') && file.size > 10 * 1024 * 1024) { // > 10MB
             setIsCompressing(true);
             const compressedFile = await compressVideo(file);
