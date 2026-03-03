@@ -19,10 +19,6 @@ dotenv.config();
 
 const app = express();
 
-/* =========================
-   CORS (PRODUCTION READY)
-========================= */
-
 app.use(
   cors({
     origin: [
@@ -36,10 +32,6 @@ app.use(
 );
 
 app.use(express.json());
-
-/* =========================
-   FILE UPLOAD SETUP
-========================= */
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -91,10 +83,6 @@ app.post("/upload", upload.single("file"), (req, res) => {
   });
 });
 
-/* =========================
-   DATABASE
-========================= */
-
 mongoose
   .connect(process.env.MONGO_URL)
   .then(() => console.log("MongoDB Connected"))
@@ -102,13 +90,8 @@ mongoose
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
-/* =========================
-   ROUTES
-========================= */
-
 app.use("/api/blogs", blogRoutes);
 
-/* ===== SIGNUP ===== */
 app.post("/signup", async (req, res) => {
   try {
     const { email, password, username } = req.body;
@@ -150,7 +133,6 @@ app.post("/signup", async (req, res) => {
   }
 });
 
-/* ===== LOGIN ===== */
 app.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -181,7 +163,6 @@ app.post("/login", async (req, res) => {
   }
 });
 
-/* ===== GOOGLE AUTH ===== */
 app.post("/auth/google", async (req, res) => {
   try {
     const { idToken } = req.body;
@@ -218,7 +199,6 @@ app.post("/auth/google", async (req, res) => {
   }
 });
 
-/* ===== PROFILE ===== */
 app.get("/profile", authMiddleware, async (req, res) => {
   const user = await User.findById(req.user.userId).select("-password");
   res.json({ status: "ok", user });
@@ -226,7 +206,6 @@ app.get("/profile", authMiddleware, async (req, res) => {
 
 
 const PORT = process.env.PORT || 5000;
-
 app.listen(PORT, () => {
   console.log(`Server running on Port ${PORT}`);
 });
